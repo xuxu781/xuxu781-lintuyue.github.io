@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邻兔跃二维码挪车系统</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            background: linear-gradient(45deg, #ff8c00, #e52e71, #3498db, #9b59b6);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #4CAF50;
+        }
+
+        .container {
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            margin: 20px auto;
+        }
+
+        label {
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 8px;
+            display: block;
+            text-align: left;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            font-size: 1.2rem;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: background-color 0.3s, transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        button:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            transition: width 0.4s, height 0.4s;
+        }
+
+        button:active::after {
+            width: 200px;
+            height: 200px;
+            transition: width 0s, height 0s;
+        }
+
+        #qrcode-container {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        #qrcode-container .qr-card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        #qrcode-container canvas {
+            width: 150px;
+            height: 150px;
+            max-width: 100%;
+        }
+
+        #captcha-modal, #limit-modal, #notice-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .captcha-container, .limit-container, .notice-container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 15px;
+            width: 350px;
+            max-width: 90%;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+            animation: slideIn 0.3s ease;
+            position: relative;
+            z-index: 1010;
+        }
+
+        .notice-container h3 {
+            font-size: 1.4rem;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .notice-container p {
+            font-size: 1rem;
+            color: #555;
+            margin: 15px 0;
+            line-height: 1.5;
+        }
+
+        .notice-container button {
+            background-color: #2196F3;
+            width: 120px;
+            padding: 10px;
+            margin: 0 auto;
+            display: block;
+        }
+
+        footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            padding: 15px 0;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.4));
+            color: #fff;
+            font-size: 1rem;
+            z-index: 10;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .footer-info {
+            max-width: 90%;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            padding: 0 10px;
+        }
+
+        .footer-info p {
+            margin: 0;
+            padding: 5px 0;
+            font-weight: 500;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .beian-link {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: #e0e0e0;
+            transition: color 0.3s;
+        }
+
+        .beian-link:hover {
+            color: #fff;
+        }
+
+        .beian-link img {
+            width: 22px;
+            height: 22px;
+            margin-right: 8px;
+            filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.2));
+        }
+
+        #cc-myssl-id {
+            position: fixed;
+            right: 10px;
+            bottom: 10px;
+            width: 65px;
+            height: 65px;
+            z-index: 99;
+            transition: transform 0.3s;
+        }
+
+        #cc-myssl-id:hover {
+            transform: scale(1.1);
+        }
+
+        #cc-myssl-id img {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+            display: block; /* 避免加载延迟导致布局偏移 */
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 1.8rem; }
+            .container { padding: 20px; }
+            button { font-size: 1rem; padding: 10px 15px; }
+            footer { padding: 10px 0; font-size: 0.85rem; }
+            .footer-info { flex-direction: column; gap: 10px; padding: 0 5px; }
+            .beian-link img { width: 18px; height: 18px; margin-right: 5px; }
+            #cc-myssl-id { width: 50px; height: 50px; right: 5px; bottom: 5px; }
+        }
+
+        @media (max-width: 400px) {
+            footer { font-size: 0.75rem; }
+            .beian-link img { width: 16px; height: 16px; }
+            #cc-myssl-id { width: 40px; height: 40px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>邻兔跃lT二维码挪车系统</h1>
+        <label for="owner">车主姓氏:</label>
+        <input type="text" id="owner" placeholder="请输入车主姓氏（仅中文）">
+        
+        <label for="plate">车牌号:</label>
+        <input type="text" id="plate" placeholder="请输入车牌号（如：苏C12345 或 苏警1234）">
+        
+        <label for="phone">手机号码:</label>
+        <input type="text" id="phone" placeholder="请输入11位手机号码">
+        
+        <button onclick="checkGenerateLimit()">生成二维码</button>
+        <div id="qrcode-container">
+            <h2>扫描二维码查看车辆信息</h2>
+            <div class="qr-card">
+                <div id="qrcode"></div>
+                <div class="qr-info">
+                    <h3 id="owner-name"></h3>
+                    <p>车牌号：<span id="plate-number"></span></p>
+                    <p>手机号码：<span id="phone-number"></span></p>
+                </div>
+            </div>
+            <button id="download-btn" onclick="downloadQRCode()">下载二维码</button>
+        </div>
+    </div>
+    <footer>
+        <div class="footer-info">
+            <p>Copyright © 2022 - 2025 邻兔跃工作室 版权所有</p>
+            <a target="_blank" href="https://beian.miit.gov.cn/" class="beian-link">
+                <img src="/images/2022.png" alt="备案图标" loading="lazy">
+                <p>苏ICP备2023001234号-1</p>
+            </a>
+        </div>
+    </footer>
+    <div id="cc-myssl-id">
+        <a href="http://47.116.186.1/">
+            <img src="/images/2024.png" alt="安全认证图标" loading="lazy">
+        </a>
+    </div>
+    <div id="captcha-modal">
+        <div class="captcha-container">
+            <h3>请完成验证</h3>
+            <div class="captcha-question" id="captcha-question"></div>
+            <input type="number" class="captcha-input" id="captcha-input" placeholder="请输入答案">
+            <div class="captcha-buttons">
+                <button class="captcha-btn confirm-btn" onclick="verifyCaptcha()">确认</button>
+                <button class="captcha-btn cancel-btn" onclick="closeCaptcha()">取消</button>
+            </div>
+            <div class="error-text" id="error-text">答案错误，请重试！</div>
+        </div>
+    </div>
+    <div id="limit-modal">
+        <div class="limit-container">
+            <h3>生成限制</h3>
+            <p>1分钟内生成次数已达上限，请稍后再试！</p>
+            <button onclick="document.getElementById('limit-modal').style.display = 'none'">确定</button>
+        </div>
+    </div>
+    <div id="notice-modal">
+        <div class="notice-container">
+            <h3>系统公告</h3>
+            <p>欢迎使用邻兔跃二维码挪车系统！请确保输入信息准确无误，生成的二维码仅用于联系车主挪车，请勿用于其他用途。系统不保留用户信息，传输链路已加密，请放心使用。公益项目，请勿逆向倒卖！反馈邮箱：2192174641@qq.com</p>
+            <button onclick="closeNotice()">确认</button>
+        </div>
+    </div>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script>
+        let correctAnswer;
+        let qrCodeInstance = null;
+
+        window.onload = function() {
+            document.getElementById('notice-modal').style.display = 'flex';
+        };
+
+        function closeNotice() {
+            document.getElementById('notice-modal').style.display = 'none';
+        }
+
+        function checkGenerateLimit() {
+            const now = Date.now();
+            const oneMinute = 60 * 1000;
+            let generateData = JSON.parse(localStorage.getItem('generateData')) || { count: 0, startTime: now };
+
+            if (now - generateData.startTime > oneMinute) {
+                generateData = { count: 0, startTime: now };
+            }
+
+            if (generateData.count >= 2) {
+                document.getElementById('limit-modal').style.display = 'flex';
+                return;
+            }
+
+            showCaptcha();
+        }
+
+        function showCaptcha() {
+            const modal = document.getElementById('captcha-modal');
+            const questionDiv = document.getElementById('captcha-question');
+            const input = document.getElementById('captcha-input');
+            const errorText = document.getElementById('error-text');
+
+            const num1 = Math.floor(Math.random() * 20) + 1;
+            const num2 = Math.floor(Math.random() * 20) + 1;
+            correctAnswer = num1 + num2;
+            
+            questionDiv.textContent = `请计算：${num1} + ${num2} = ?`;
+            input.value = '';
+            errorText.style.display = 'none';
+            modal.style.display = 'flex';
+            
+            input.addEventListener('keypress', function handler(e) {
+                if (e.key === 'Enter') {
+                    verifyCaptcha();
+                    input.removeEventListener('keypress', handler); // 移除一次性监听器
+                }
+            }, { once: true });
+        }
+
+        function verifyCaptcha() {
+            const input = document.getElementById('captcha-input');
+            const errorText = document.getElementById('error-text');
+            
+            if (parseInt(input.value) === correctAnswer) {
+                document.getElementById('captcha-modal').style.display = 'none';
+                generateQRCode();
+            } else {
+                errorText.style.display = 'block';
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        function closeCaptcha() {
+            document.getElementById('captcha-modal').style.display = 'none';
+        }
+
+        function generateQRCode() {
+            const owner = document.getElementById('owner').value.trim();
+            const plate = document.getElementById('plate').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+
+            if (!owner || !/^[\u4e00-\u9fa5]{1,5}$/.test(owner)) {
+                alert('请输入有效的中文姓氏（1-5个字符）');
+                return;
+            }
+
+            const plateRegex = [
+                /^[\u4e00-\u9fa5]{1}[A-Z]{1}[A-Z0-9]{5}$/,
+                /^[\u4e00-\u9fa5]{1}[A-Z]{1}[DF][A-Z0-9]{6}$/,
+                /^[\u4e00-\u9fa5]{1}警\d{4}$/,
+                /^[\u4e00-\u9fa5]{1}[A-Z]{1}警\d{4}$/,
+                /^[\u4e00-\u9fa5]{1}O\d{5}$/,
+                /^WJ[\u4e00-\u9fa5]{1}\d{5}$/
+            ];
+            if (!plate || !plateRegex.some(regex => regex.test(plate))) {
+                alert('请输入有效的车牌号（如：苏C12345、苏CD123456、苏警1234、苏O12345、WJ苏12345）');
+                return;
+            }
+
+            if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
+                alert('请输入有效的11位手机号码');
+                return;
+            }
+
+            const ownerTitle = owner + "先生/美女";
+            const qrText = `http://47.116.186.1/vehicle_info.html?owner=${encodeURIComponent(ownerTitle)}&plate=${encodeURIComponent(plate)}&phone=${encodeURIComponent(phone)}`;
+
+            const qrCodeContainer = document.getElementById('qrcode');
+            qrCodeContainer.innerHTML = '';
+
+            qrCodeInstance = new QRCode(qrCodeContainer, {
+                text: qrText,
+                width: 150,
+                height: 150,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            document.getElementById('owner-name').innerHTML = "车主：" + ownerTitle;
+            document.getElementById('plate-number').innerHTML = plate;
+            document.getElementById('phone-number').innerHTML = phone;
+            document.getElementById('qrcode-container').style.display = 'block';
+
+            const now = Date.now();
+            let generateData = JSON.parse(localStorage.getItem('generateData')) || { count: 0, startTime: now };
+            if (now - generateData.startTime > 60 * 1000) {
+                generateData = { count: 0, startTime: now };
+            }
+            generateData.count++;
+            localStorage.setItem('generateData', JSON.stringify(generateData));
+        }
+
+        function downloadQRCode() {
+            if (!qrCodeInstance) return;
+
+            const canvas = document.getElementById('qrcode').querySelector('canvas');
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = '车辆二维码.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
